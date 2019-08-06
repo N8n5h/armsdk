@@ -97,18 +97,25 @@ class ArmoryAddonPreferences(AddonPreferences):
                 layout.prop(self, "sdk_path")
         else:
             layout.prop(self, "sdk_path")
-        layout.label(text="If the directory doesn't exist it will be created.")
+        sdk_path = get_sdk_path(context)
+        if os.path.exists(sdk_path + '/armory') or os.path.exists(sdk_path + '/armory_backup'):
+            sdk_exists = True
+        else:
+            sdk_exists = False
+        if not sdk_exists:
+            layout.label(text="The directory will be created.")
+        else:
+            layout.label(text="")
         box = layout.box().column()
-        box.label(text="Armory Updater")
+        box.label(text="Armory SDK Manager")
         box.label(text="Note: Development version may run unstable!")
         row = box.row(align=True)
         row.alignment = 'EXPAND'
-        row.operator("arm_addon.help", icon="URL")
-        sdk_path = get_sdk_path(context)
-        if os.path.exists(sdk_path + '/armory') or os.path.exists(sdk_path + '/armory_backup'):
+        row.operator("arm_addon.help", icon="URL")  
+        if sdk_exists:
             row.operator("arm_addon.update", icon="FILE_REFRESH")
         else:
-            row.operator("arm_addon.install", icon="FILE_REFRESH")
+            row.operator("arm_addon.install", icon="IMPORT")
         row.operator("arm_addon.restore")
         box.label(text="Check console for download progress. Please restart Blender after successful SDK update.")
         layout.prop(self, "show_advanced")
@@ -244,10 +251,10 @@ class ArmAddonStopButton(bpy.types.Operator):
         return {"FINISHED"}
 
 class ArmAddonInstallButton(bpy.types.Operator):
-    '''Install Armory SDK'''
+    '''Download and set up Armory SDK'''
     bl_idname = "arm_addon.install"
-    bl_label = "Install SDK"
-    bl_description = "Install the latest development version"
+    bl_label = "Download and set up SDK"
+    bl_description = "Download and set up the latest development version"
 
     def execute(self, context):
         update_sdk(self,context)
@@ -279,7 +286,7 @@ def update_sdk(self,context):
     global repos_done
     repos_updated = 0
     repos_done = 0
-    repos_total = 10
+    repos_total = 11
     def done(error=0):
         global repos_updated
         global repos_total
@@ -300,7 +307,14 @@ def update_sdk(self,context):
     git_clone(done, sdk_path, 'armory3d/iron_format', 'lib/iron_format')
     git_clone(done, sdk_path, 'armory3d/Krom_bin', 'Krom')
     git_clone(done, sdk_path, 'armory3d/Kha', 'Kha', recursive=True)
-    git_clone(done, sdk_path, 'armory3d/nodejs_bin/', 'nodejs')
+    git_clone(done, sdk_path, 'armory3d/nodejs_bin', 'nodejs')
+    if get_os() == 'mac':
+        git_clone(done, sdk_path, 'armory3d/KodeStudio-macOS', 'KodeStudio.app')
+    elif get_os() == 'win':
+        git_clone(done, sdk_path, 'armory3d/KodeStudio-Windows', 'win32')
+    else:
+        git_clone(done, sdk_path, 'armory3d/KodeStudio-Linux', 'linux64')
+
 
 class ArmAddonRestoreButton(bpy.types.Operator):
     '''Update Armory SDK'''
